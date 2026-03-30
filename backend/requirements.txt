@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+yt-dlp
+opencv-python-headless
+numpy
+ffmpeg-python
+python-multipart
+aiofiles
+scipy

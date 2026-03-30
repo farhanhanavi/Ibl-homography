@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Court Vision — Basketball Analysis</title>
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #1f2937;
+      --border:    #30363d;
+      --green:     #22c55e;
+      --green-d:   #16a34a;
+      --green-glow:#22c55e44;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --accent:    #58a6ff;
+      --red:       #f85149;
+      --radius:    12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 80px;
+    }
+
+    /* ===== Hero ===== */
+    .hero {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #22c55e22, #22c55e11);
+      border: 1px solid #22c55e44;
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #e6edf3 30%, #58a6ff 70%, #22c55e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ===== Card ===== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 24px;
+    }
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* ===== URL Input ===== */
+    .url-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 4px 4px 4px 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .url-wrapper:focus-within {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px var(--green-glow);
+    }
+    .url-icon {
+      color: var(--muted);
+      flex-shrink: 0;
+      margin-right: 10px;
+    }
+    .url-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 12px 0;
+    }
+    .url-input::placeholder { color: var(--muted); }
+    .url-go-btn {
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 10px 22px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .url-go-btn:hover { background: var(--green-d); }
+    .url-go-btn:active { transform: scale(0.97); }
+    .url-go-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ===== Timestamps ===== */
+    #step-timestamps {
+      display: none;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    #step-timestamps.visible {
+      display: block;
+      animation: fadeSlideIn 0.35s ease forwards;
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .timestamp-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .ts-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .ts-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: 1.1rem;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 2px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .ts-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px #58a6ff33;
+    }
+
+    .analyze-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--green), #16a34a);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px var(--green-glow);
+    }
+    .analyze-btn:hover { opacity: 0.92; box-shadow: 0 6px 28px var(--green-glow); }
+    .analyze-btn:active { transform: scale(0.98); }
+    .analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* ===== Court Point Picker ===== */
+    #step-court {
+      display: none;
+    }
+    #step-court.visible {
+      display: block;
+      animation: fadeSlideIn 0.35s ease forwards;
+    }
+
+    .court-instructions {
+      background: #22c55e11;
+      border: 1px solid #22c55e33;
+      border-radius: 8px;
+      padding: 14px 18px;
+      color: var(--green);
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+    .court-instructions strong { display: block; margin-bottom: 4px; }
+
+    .court-labels-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .legend-item.active {
+      border-color: var(--accent);
+      background: #58a6ff22;
+      color: var(--accent);
+    }
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .canvas-container {
+      position: relative;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      cursor: crosshair;
+      margin-bottom: 16px;
+    }
+    #court-canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .point-counter {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .point-counter span { color: var(--text); font-weight: 600; }
+
+    .court-action-row {
+      display: flex;
+      gap: 12px;
+    }
+    .btn-secondary {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 11px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-secondary:hover { background: #2d3748; }
+    .confirm-pts-btn {
+      flex: 2;
+    }
+
+    /* ===== Progress ===== */
+    #step-progress {
+      display: none;
+    }
+    #step-progress.visible {
+      display: block;
+      animation: fadeSlideIn 0.35s ease forwards;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+    }
+    .progress-label .status-text { color: var(--muted); }
+    .progress-label .pct-text { color: var(--green); font-weight: 600; }
+
+    .progress-track {
+      background: var(--surface2);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: linear-gradient(90deg, var(--green), #86efac);
+      height: 100%;
+      border-radius: 20px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    /* ===== Result ===== */
+    #step-result {
+      display: none;
+    }
+    #step-result.visible {
+      display: block;
+      animation: fadeSlideIn 0.35s ease forwards;
+    }
+
+    .result-video {
+      width: 100%;
+      border-radius: 8px;
+      background: #000;
+      display: block;
+    }
+
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      margin-top: 16px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .download-btn:hover {
+      border-color: var(--green);
+      background: #22c55e0d;
+      color: var(--green);
+    }
+
+    /* ===== Error toast ===== */
+    #error-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #3b1515;
+      border: 1px solid var(--red);
+      color: #fca5a5;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      max-width: 480px;
+      text-align: center;
+      transition: transform 0.3s ease;
+      z-index: 1000;
+    }
+    #error-toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ===== Loading spinner ===== */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #ffffff44;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== Marker dots on canvas ===== */
+    .canvas-marker {
+      position: absolute;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #fff;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-shadow: 0 0 6px #000a;
+    }
+    .canvas-marker-label {
+      position: absolute;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      background: #00000088;
+      padding: 1px 4px;
+      border-radius: 4px;
+      transform: translate(-50%, -140%);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Basketball Analysis</div>
+    <h1>Court Vision</h1>
+    <p>Paste a YouTube link, set a time window, and get an instant top-down court animation of every player's movement.</p>
+  </div>
+
+  <!-- Step 1: URL Input -->
+  <div class="card" id="step-url">
+    <div class="card-title">Video Source</div>
+    <div class="url-wrapper">
+      <svg class="url-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.96-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
+        <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/>
+      </svg>
+      <input
+        class="url-input"
+        id="url-input"
+        type="url"
+        placeholder="Paste YouTube link here..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="url-go-btn" id="url-go-btn" onclick="handleUrlSubmit()">Load</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Timestamps -->
+  <div class="card" id="step-timestamps">
+    <div class="card-title">Time Range</div>
+    <div class="timestamp-row">
+      <div class="ts-group">
+        <label>Start Time</label>
+        <input class="ts-input" id="ts-start" type="text" placeholder="0:00" maxlength="10" />
+      </div>
+      <div class="ts-group">
+        <label>End Time</label>
+        <input class="ts-input" id="ts-end" type="text" placeholder="0:30" maxlength="10" />
+      </div>
+    </div>
+    <button class="analyze-btn" id="analyze-btn" onclick="handleAnalyze()">
+      Analyze Clip
+    </button>
+  </div>
+
+  <!-- Step 3: Court Point Picker -->
+  <div class="card" id="step-court">
+    <div class="card-title">Court Calibration</div>
+    <div class="court-instructions">
+      <strong>Click on the court corners to calibrate the homography.</strong>
+      Select a label below, then click its location on the frame. You need at least 4 points. The more points, the more accurate the projection.
+    </div>
+
+    <div class="court-labels-legend" id="label-legend">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="point-counter">
+      Points placed: <span id="point-count">0</span> / 4 minimum
+    </div>
+
+    <div class="canvas-container" id="canvas-container">
+      <canvas id="court-canvas"></canvas>
+      <!-- Marker overlays injected here -->
+    </div>
+
+    <div class="court-action-row">
+      <button class="btn-secondary" onclick="undoLastPoint()">Undo Last</button>
+      <button class="btn-secondary" onclick="clearAllPoints()">Clear All</button>
+      <button class="analyze-btn confirm-pts-btn" id="confirm-pts-btn" onclick="handleConfirmPoints()" disabled>
+        Confirm &amp; Process
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 4: Progress -->
+  <div class="card" id="step-progress">
+    <div class="card-title">Processing</div>
+    <div class="progress-label">
+      <span class="status-text" id="progress-status">Analysing footage...</span>
+      <span class="pct-text" id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Step 5: Result -->
+  <div class="card" id="step-result">
+    <div class="card-title">Result</div>
+    <video class="result-video" id="result-video" controls playsinline></video>
+    <a class="download-btn" id="download-btn" href="#" download>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download Video
+    </a>
+  </div>
+
+  <!-- Error Toast -->
+  <div id="error-toast"></div>
+
+  <script>
+    // =========================================================
+    // State
+    // =========================================================
+    let state = {
+      jobId: null,
+      thumbUrl: null,
+      origWidth: 0,
+      origHeight: 0,
+      displayWidth: 0,
+      displayHeight: 0,
+      points: [],           // {x, y, label}
+      activeLabel: null,
+      pollTimer: null,
+    };
+
+    const COURT_LABELS = [
+      { key: "tl",  name: "Top-Left Corner" },
+      { key: "tr",  name: "Top-Right Corner" },
+      { key: "bl",  name: "Bottom-Left Corner" },
+      { key: "br",  name: "Bottom-Right Corner" },
+      { key: "ftl", name: "FT Left" },
+      { key: "ftr", name: "FT Right" },
+    ];
+
+    // =========================================================
+    // UI helpers
+    // =========================================================
+    function show(id) {
+      const el = document.getElementById(id);
+      el.classList.add('visible');
+    }
+
+    function showError(msg) {
+      const toast = document.getElementById('error-toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 5000);
+    }
+
+    function setLoading(btnId, loading, text) {
+      const btn = document.getElementById(btnId);
+      if (loading) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span>${text}`;
+      } else {
+        btn.disabled = false;
+        btn.textContent = text;
+      }
+    }
+
+    // =========================================================
+    // Step 1: URL submit
+    // =========================================================
+    async function handleUrlSubmit() {
+      const url = document.getElementById('url-input').value.trim();
+      if (!url) { showError('Please enter a YouTube URL.'); return; }
+
+      setLoading('url-go-btn', true, 'Loading...');
+      try {
+        const res = await fetch('/api/fetch-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to load video');
+
+        state.jobId = data.job_id;
+        state.thumbUrl = data.thumb_url;
+        state.origWidth = data.width;
+        state.origHeight = data.height;
+
+        show('step-timestamps');
+        document.getElementById('ts-end').placeholder = formatTime(Math.min(30, data.duration));
+      } catch (e) {
+        showError(e.message);
+      } finally {
+        setLoading('url-go-btn', false, 'Load');
+      }
+    }
+
+    document.getElementById('url-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleUrlSubmit();
+    });
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${m}:${s.toString().padStart(2,'0')}`;
+    }
+
+    // =========================================================
+    // Step 2: Clip
+    // =========================================================
+    async function handleAnalyze() {
+      const start = document.getElementById('ts-start').value.trim() || '0:00';
+      const end   = document.getElementById('ts-end').value.trim();
+      if (!end) { showError('Please enter an end time.'); return; }
+
+      setLoading('analyze-btn', true, 'Clipping...');
+      try {
+        const res = await fetch('/api/clip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ job_id: state.jobId, start, end }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Clip failed');
+
+        initCourtPicker();
+        show('step-court');
+      } catch (e) {
+        showError(e.message);
+      } finally {
+        setLoading('analyze-btn', false, 'Analyze Clip');
+      }
+    }
+
+    // =========================================================
+    // Step 3: Court picker
+    // =========================================================
+    function initCourtPicker() {
+      // Build legend
+      const legend = document.getElementById('label-legend');
+      legend.innerHTML = '';
+      COURT_LABELS.forEach(lbl => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.dataset.key = lbl.key;
+        item.innerHTML = `<div class="legend-dot"></div>${lbl.name}`;
+        item.addEventListener('click', () => selectLabel(lbl.key));
+        legend.appendChild(item);
+      });
+      selectLabel(COURT_LABELS[0].key);
+
+      // Draw first frame onto canvas
+      const container = document.getElementById('canvas-container');
+      const canvas = document.getElementById('court-canvas');
+      const img = new Image();
+      img.onload = () => {
+        canvas.width  = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        state.origWidth  = img.naturalWidth;
+        state.origHeight = img.naturalHeight;
+      };
+      img.src = state.thumbUrl;
+
+      canvas.addEventListener('click', onCanvasClick);
+    }
+
+    function selectLabel(key) {
+      state.activeLabel = key;
+      document.querySelectorAll('.legend-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.key === key);
+      });
+    }
+
+    function onCanvasClick(e) {
+      const canvas = document.getElementById('court-canvas');
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width  / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left)  * scaleX;
+      const y = (e.clientY - rect.top)   * scaleY;
+
+      // Remove existing point for this label
+      state.points = state.points.filter(p => p.label !== state.activeLabel);
+
+      state.points.push({ x, y, label: state.activeLabel });
+
+      // Auto-advance to next label
+      const idx = COURT_LABELS.findIndex(l => l.key === state.activeLabel);
+      if (idx < COURT_LABELS.length - 1) {
+        selectLabel(COURT_LABELS[idx + 1].key);
+      }
+
+      renderMarkers();
+      updatePointCounter();
+    }
+
+    function renderMarkers() {
+      const container = document.getElementById('canvas-container');
+      const canvas    = document.getElementById('court-canvas');
+
+      // Remove old markers
+      container.querySelectorAll('.canvas-marker, .canvas-marker-label').forEach(el => el.remove());
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width  / canvas.width;
+      const scaleY = rect.height / canvas.height;
+
+      state.points.forEach(p => {
+        const dot = document.createElement('div');
+        dot.className = 'canvas-marker';
+        dot.style.left = (p.x * scaleX) + 'px';
+        dot.style.top  = (p.y * scaleY) + 'px';
+        container.appendChild(dot);
+
+        const lbl = document.createElement('div');
+        lbl.className = 'canvas-marker-label';
+        lbl.textContent = COURT_LABELS.find(l => l.key === p.label)?.name || p.label;
+        lbl.style.left = (p.x * scaleX) + 'px';
+        lbl.style.top  = (p.y * scaleY) + 'px';
+        container.appendChild(lbl);
+      });
+    }
+
+    function updatePointCounter() {
+      document.getElementById('point-count').textContent = state.points.length;
+      document.getElementById('confirm-pts-btn').disabled = state.points.length < 4;
+    }
+
+    function undoLastPoint() {
+      state.points.pop();
+      renderMarkers();
+      updatePointCounter();
+    }
+
+    function clearAllPoints() {
+      state.points = [];
+      renderMarkers();
+      updatePointCounter();
+    }
+
+    window.addEventListener('resize', () => {
+      if (state.points.length) renderMarkers();
+    });
+
+    // =========================================================
+    // Step 3 → confirm points + kick off processing
+    // =========================================================
+    async function handleConfirmPoints() {
+      if (state.points.length < 4) { showError('Place at least 4 court points.'); return; }
+
+      const canvas = document.getElementById('court-canvas');
+      const displayW = canvas.getBoundingClientRect().width;
+      const displayH = canvas.getBoundingClientRect().height;
+      const scaleX = canvas.width  / displayW;
+      const scaleY = canvas.height / displayH;
+
+      setLoading('confirm-pts-btn', true, 'Computing...');
+      try {
+        // Set court points
+        const res1 = await fetch('/api/set-court-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            job_id: state.jobId,
+            points: state.points,
+            display_width:  canvas.width,
+            display_height: canvas.height,
+          }),
+        });
+        const d1 = await res1.json();
+        if (!res1.ok) throw new Error(d1.detail || 'Court calibration failed');
+
+        // Kick off processing
+        const res2 = await fetch('/api/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ job_id: state.jobId }),
+        });
+        const d2 = await res2.json();
+        if (!res2.ok) throw new Error(d2.detail || 'Processing failed to start');
+
+        show('step-progress');
+        startPolling();
+      } catch (e) {
+        showError(e.message);
+      } finally {
+        setLoading('confirm-pts-btn', false, 'Confirm & Process');
+      }
+    }
+
+    // =========================================================
+    // Step 4: Poll for progress
+    // =========================================================
+    const STATUS_MESSAGES = {
+      processing: 'Tracking player movements...',
+      done:       'Finalising video...',
+      error:      'An error occurred.',
+    };
+
+    function startPolling() {
+      if (state.pollTimer) clearInterval(state.pollTimer);
+      state.pollTimer = setInterval(pollStatus, 2000);
+    }
+
+    async function pollStatus() {
+      try {
+        const res  = await fetch(`/api/status/${state.jobId}`);
+        const data = await res.json();
+
+        const pct  = Math.min(data.progress || 0, 100);
+        document.getElementById('progress-fill').style.width = pct + '%';
+        document.getElementById('progress-pct').textContent  = pct + '%';
+        document.getElementById('progress-status').textContent =
+          STATUS_MESSAGES[data.status] || 'Processing...';
+
+        if (data.status === 'done') {
+          clearInterval(state.pollTimer);
+          showResult(data.output_url);
+        } else if (data.status === 'error') {
+          clearInterval(state.pollTimer);
+          showError(data.error || 'Processing failed.');
+        }
+      } catch (e) {
+        // Network blip — keep polling
+      }
+    }
+
+    // =========================================================
+    // Step 5: Result
+    // =========================================================
+    function showResult(outputUrl) {
+      const video = document.getElementById('result-video');
+      video.src = outputUrl;
+
+      const dlBtn = document.getElementById('download-btn');
+      const filename = outputUrl.split('/').pop();
+      dlBtn.href = `/download/${filename}`;
+
+      show('step-result');
+      video.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  </script>
+</body>
+</html>
