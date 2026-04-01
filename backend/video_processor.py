@@ -15,7 +15,9 @@ def download_video(url: str, job_id: str, output_dir: str) -> dict:
     video_path = str(output_dir / f"tmp_{job_id}.mp4")
 
     ydl_opts = {
-        "format": "bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        # Prefer single-file mp4 to avoid needing ffmpeg for merging;
+        # fall back to best available + merge if only split streams exist.
+        "format": "best[ext=mp4][height<=1080]/bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best",
         "outtmpl": video_path,
         "quiet": True,
         "no_warnings": True,
