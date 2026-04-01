@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+
+# Temp / output files
+static/tmp_*.mp4
+static/clip_*.mp4
+static/court_*.mp4
+static/output_*.mp4
+static/thumb_*.jpg
+static/court_compat_*.mp4
+
+# OS
+.DS_Store
+Thumbs.db
